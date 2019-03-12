@@ -1,7 +1,7 @@
 use std::time::{Instant, Duration};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use breakout::{BoardSize, Ball};
+use breakout::{Breakout, BoardSize, Ball};
 
 fn main() {
     use glium::{glutin, Surface};
@@ -39,7 +39,7 @@ fn main() {
         uniform vec2 boardsize;
 
         void main() {
-            vec2 coord = position/boardsize*2.0-vec2(1.0);
+            vec2 coord = 2.0*position-vec2(1.0,1.0);
             gl_Position = vec4(coord, 0.0, 1.0);
             gl_PointSize = 10.0;
         }
@@ -75,23 +75,27 @@ fn main() {
         let ball_position = ball_position.clone();
 
         thread::spawn(move || {
-            let mut ball = Ball {
+            let ball = Ball {
                 position: [0.0, 0.0],
-                direction: [100.0, 141.42],
+                direction: [1.0, 1.4142],
                 radius: 2.0,
+            };
+            let mut breakout = Breakout {
+                ball: ball,
+                board: boardsize,
             };
             let mut time = Instant::now();
 
             loop {
-                thread::sleep(Duration::from_millis(10));
+                thread::sleep(Duration::from_millis(1));
 
                 let curr_time = Instant::now();
                 let step = (curr_time.duration_since(time).as_millis() as f32) / 1000.0;
                 time = curr_time;
 
-                ball.update(step, &boardsize);
+                breakout.update(step);
 
-                *ball_position.lock().unwrap() = ball.position;
+                *ball_position.lock().unwrap() = breakout.ball.position;
             }
         })
     };
@@ -117,6 +121,14 @@ fn main() {
             match ev {
                 glutin::Event::WindowEvent { event, .. } => match event {
                     glutin::WindowEvent::CloseRequested => closed = true,
+                    glutin::WindowEvent::KeyboardInput { input, .. } => {
+                        match (input.state, input.virtual_keycode) {
+                            (glutin::ElementState::Released, Some(glutin::VirtualKeyCode::Space)) => {
+                                println!("SPACE");
+                            },
+                            _ => (),
+                        }
+                    },
                     _ => (),
                 },
                 _ => (),
