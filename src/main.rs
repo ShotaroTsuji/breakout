@@ -1,7 +1,8 @@
 use std::time::{Instant, Duration};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use breakout::{Breakout, BoardSize, Ball};
+use breakout::{Breakout, BoardSize};
+use breakout::ball::Ball;
 
 fn main() {
     use glium::{glutin, Surface};
