@@ -1,4 +1,5 @@
 pub mod ball;
+pub mod bricks;
 
 use crate::ball::Ball;
 

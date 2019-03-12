@@ -3,6 +3,7 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use breakout::{Breakout, BoardSize};
 use breakout::ball::Ball;
+use breakout::bricks::Bricks;
 
 fn main() {
     use glium::{glutin, Surface};
@@ -69,6 +70,53 @@ fn main() {
                                 uses_point_size: true,
                             }).unwrap();
 
+    let brick_vs_src = r#"
+        #version 140
+
+        in vec2 position;
+        in int life;
+
+        out vec4 brick_color;
+
+        void main() {
+            vec2 coord = 2.0*position-vec2(1.0,1.0);
+            gl_Position = vec4(coord, 0.0, 1.0);
+            brick_color = (life > 0) ?
+                vec4(0.0, 0.0, 0.0, 1.0) :
+                vec4(1.0, 1.0, 1.0, 1.0);
+        }
+    "#;
+    let brick_fs_src = r#"
+        #version 140
+
+        in vec4 brick_color;
+        out vec4 color;
+
+        void main() {
+            color = brick_color;
+        }
+    "#;
+    let brick_program = glium::Program::from_source(&display, brick_vs_src, brick_fs_src, None).unwrap();
+
+    //let bricks = Bricks::new_with(20, 30, |x, y| if (x % 2 == 0) && (y % 2 == 1) { 1 } else { 0 });
+    let bricks = {
+        use rand::distributions::Distribution;
+
+        let between = rand::distributions::Uniform::from(0usize..2);
+        let mut rng = rand::thread_rng();
+        Bricks::new_with(20, 30, move |_, y| {
+            if y > 3 {
+                between.sample(&mut rng)
+            } else {
+                0
+            }
+        })
+    };
+    let (brick_vertices, brick_indices) = bricks.to_vertices();
+
+    let brick_vertex_buffer = glium::VertexBuffer::new(&display, &brick_vertices).unwrap();
+    let brick_index_buffer = glium::index::IndexBuffer::new(&display, glium::index::PrimitiveType::TrianglesList, &brick_indices).unwrap();
+
     let ball_position = Arc::new(Mutex::new([0.0f32, 0.0]));
 
     let child = {
@@ -114,6 +162,8 @@ fn main() {
 
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 1.0);
+
+        target.draw(&brick_vertex_buffer, &brick_index_buffer, &brick_program, &glium::uniforms::EmptyUniforms, &Default::default()).unwrap();
 
         target.draw(&vertex_buffer, &indices, &program, &uniforms, &Default::default()).unwrap();
         target.finish().unwrap();
