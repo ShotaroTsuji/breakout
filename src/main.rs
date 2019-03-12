@@ -76,9 +76,9 @@ fn main() {
 
         thread::spawn(move || {
             let ball = Ball {
-                position: [0.0, 0.0],
-                direction: [1.0, 1.4142],
-                radius: 2.0,
+                position: [0.5, 0.5],
+                direction: [0.2, (2.0f32).sqrt()/5.0],
+                radius: 0.01,
             };
             let mut breakout = Breakout {
                 ball: ball,
