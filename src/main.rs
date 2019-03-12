@@ -83,7 +83,7 @@ fn main() {
             gl_Position = vec4(coord, 0.0, 1.0);
             brick_color = (life > 0) ?
                 vec4(0.0, 0.0, 0.0, 1.0) :
-                vec4(1.0, 1.0, 1.0, 1.0);
+                vec4(1.0, 1.0, 1.0, 0.0);
         }
     "#;
     let brick_fs_src = r#"
@@ -125,7 +125,7 @@ fn main() {
 
         thread::spawn(move || {
             let ball = Ball {
-                position: [0.5, 0.5],
+                position: [0.5, 0.1],
                 direction: [0.2, (2.0f32).sqrt()/5.0],
                 radius: 0.01,
             };
@@ -161,11 +161,24 @@ fn main() {
         };
 
         let mut target = display.draw();
-        target.clear_color(1.0, 1.0, 1.0, 1.0);
+        target.clear_color(1.0, 1.0-0.1, 1.0, 1.0);
 
-        target.draw(&brick_vertex_buffer, &brick_index_buffer, &brick_program, &glium::uniforms::EmptyUniforms, &Default::default()).unwrap();
+        target.draw(&brick_vertex_buffer,
+                    &brick_index_buffer,
+                    &brick_program,
+                    &glium::uniforms::EmptyUniforms,
+                    &glium::draw_parameters::DrawParameters {
+                        blend: glium::Blend::alpha_blending(),
+                        ..Default::default()
+                    }
+                    ).unwrap();
 
-        target.draw(&vertex_buffer, &indices, &program, &uniforms, &Default::default()).unwrap();
+        target.draw(&vertex_buffer, &indices, &program, &uniforms,
+                    &glium::draw_parameters::DrawParameters {
+                        blend: glium::Blend::alpha_blending(),
+                        ..Default::default()
+                    }
+                    ).unwrap();
         target.finish().unwrap();
 
         events_loop.poll_events(|ev| {
