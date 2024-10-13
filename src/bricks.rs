@@ -9,11 +9,12 @@ pub struct Bricks {
 
 #[derive(Debug,Clone,Copy)]
 pub struct BrickVertex {
-    position: [f32; 2],
-    life: i32,
+    pub position: [f32; 2],
+    pub life: i32,
+    pub is_active: i32,
 }
 
-implement_vertex!(BrickVertex, position, life);
+implement_vertex!(BrickVertex, position, life, is_active);
 
 impl Bricks {
     pub fn new(num_h: usize, num_v: usize) -> Self {
@@ -47,6 +48,21 @@ impl Bricks {
         self.lifes.get(x + y*self.num_horizontal).cloned()
     }
 
+    pub fn index(&self, x: usize, y: usize) -> usize {
+        x + y * self.num_horizontal
+    }
+
+    pub fn in_which(&self, x: f32, y: f32) -> Option<(usize, usize)> {
+        let x = (x * self.num_horizontal as f32).floor();
+        let y = (y * self.num_vertical as f32).floor();
+
+        if x < 0.0 || x > self.num_horizontal as f32 || y < 0.0 || y > self.num_vertical as f32 {
+            None
+        } else {
+            Some((x as usize, y as usize))
+        }
+    }
+
     pub fn to_vertices(&self) -> (Vec<BrickVertex>, Vec<u16>) {
         let mut vec = Vec::with_capacity(self.lifes.len()*4);
         let mut indices = Vec::new();
@@ -55,26 +71,30 @@ impl Bricks {
         let n = self.num_horizontal as f32;
         let m = self.num_vertical as f32;
 
-        for x in 0..self.num_horizontal {
-            for y in 0..self.num_vertical {
+        for y in 0..self.num_vertical {
+            for x in 0..self.num_horizontal {
                 let xf = x as f32;
                 let yf = y as f32;
 
                 vec.push(BrickVertex {
                     position: [xf/n, yf/m],
                     life: self.get_life(x, y).unwrap() as i32,
+                    is_active: 0,
                 });
                 vec.push(BrickVertex {
                     position: [(xf+1.0)/n, yf/m],
                     life: self.get_life(x, y).unwrap() as i32,
+                    is_active: 0,
                 });
                 vec.push(BrickVertex {
                     position: [(xf+1.0)/n, (yf+1.0)/m],
                     life: self.get_life(x, y).unwrap() as i32,
+                    is_active: 0,
                 });
                 vec.push(BrickVertex {
                     position: [xf/n, (yf+1.0)/m],
                     life: self.get_life(x, y).unwrap() as i32,
+                    is_active: 0,
                 });
 
                 indices.push(index);

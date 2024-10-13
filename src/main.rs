@@ -75,6 +75,7 @@ fn main() {
 
         in vec2 position;
         in int life;
+        in int is_active;
 
         out vec4 brick_color;
 
@@ -82,7 +83,7 @@ fn main() {
             vec2 coord = 2.0*position-vec2(1.0,1.0);
             gl_Position = vec4(coord, 0.0, 1.0);
             brick_color = (life > 0) ?
-                vec4(0.0, 0.0, 0.0, 1.0) :
+                vec4((is_active == 1) ? vec2(0.25,0.75) : vec2(0.0, 0.0), 0.0, 1.0) :
                 vec4(1.0, 1.0, 1.0, 0.0);
         }
     "#;
@@ -93,7 +94,8 @@ fn main() {
         out vec4 color;
 
         void main() {
-            color = brick_color;
+            float gamma = 2.2;
+            color = vec4(pow(brick_color.rgb, vec3(1.0/gamma)), brick_color.a);
         }
     "#;
     let brick_program = glium::Program::from_source(&display, brick_vs_src, brick_fs_src, None).unwrap();
@@ -114,7 +116,7 @@ fn main() {
     };
     let (brick_vertices, brick_indices) = bricks.to_vertices();
 
-    let brick_vertex_buffer = glium::VertexBuffer::new(&display, &brick_vertices).unwrap();
+    let mut brick_vertex_buffer = glium::VertexBuffer::new(&display, &brick_vertices).unwrap();
     let brick_index_buffer = glium::index::IndexBuffer::new(&display, glium::index::PrimitiveType::TrianglesList, &brick_indices).unwrap();
 
     let ball_position = Arc::new(Mutex::new([0.0f32, 0.0]));
@@ -154,6 +156,18 @@ fn main() {
         {
             let position = ball_position.lock().unwrap();
             vertex_buffer.write(&[Vertex { position: position.clone() }]);
+
+            let mut brick_vbo_mapping = brick_vertex_buffer.map();
+            match bricks.in_which(position[0], position[1]) {
+                Some((x, y)) => {
+                    let index = bricks.index(x, y);
+                    brick_vbo_mapping[index*4].is_active = 1;
+                    brick_vbo_mapping[index*4+1].is_active = 1;
+                    brick_vbo_mapping[index*4+2].is_active = 1;
+                    brick_vbo_mapping[index*4+3].is_active = 1;
+                },
+                None => {},
+            }
         }
 
         let uniforms = glium::uniform! {
